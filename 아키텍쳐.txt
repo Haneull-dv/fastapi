@@ -1,0 +1,224 @@
+com/hc
+├── api/                        # 🔹 HTTP 엔드포인트 (라우터만 있음)
+│   ├── auth.py                 # 로그인, 로그아웃, 토큰 갱신 등
+│   ├── register.py             # 회원가입 요청 (기업/회계사 전용)
+│   ├── company.py              # 기업관계자 기능 (입력, 조회, 제출 등)
+│   ├── reviewer.py             # 검토 담당자 기능 (검토, 코멘트, 제출 등)
+│   ├── approver.py             # 승인 담당자 기능 (승인, 반려, 회원관리 등)
+│   ├── consolidated_api.py
+│   ├── separate_api.py
+│   └── dependencies.py         # Depends 모듈 (optional)
+│
+├── domain/                     # 🔸 도메인 로직 (DDD 계층)
+│   ├── reviewer/
+│   │   ├── controller.py                 # API 요청 → factory 호출
+│   │   ├── factory.py                    # 작업 종류(enum)에 따라 서비스 분기
+│   │   ├── action.py                     # 핵심 처리 흐름: 제출/검토 수행
+│   │   ├── schema.py                     # 요청/응답 Pydantic 스키마
+│   │   ├── enums.py                      # ReviewActionType Enum 정의
+│   │   ├── models/
+│   │   │   ├── base_review.py            # 검토 행위 공통 속성 정의
+│   │   │   ├── view_report.py            # 열람 모델
+│   │   │   ├── comment_review.py         # 의견 작성 모델
+│   │   │   ├── submit_review.py          # 제출 완료 모델
+│   │   │   └── auth.py
+│   │   ├── services/
+│   │   │   ├── report_view.py            # 재무제표 열람
+│   │   │   ├── comment.py                # 의견 작성
+│   │   │   ├── submit.py                 # 검토 완료 제출
+│   │   │   └── auth_repository.py
+│   │   ├── repository/
+│   │   │   ├── report_repository.py      # 기업 보고서 조회용
+│   │   │   ├── comment_repository.py     # 의견 저장/조회
+│   │   │   └── submit_repository.py      # 검토 상태 변경
+│   ├── company/
+│   │   ├── controller.py
+│   │   ├── factory.py
+│   │   ├── action.py
+│   │   ├── schema.py
+│   │   ├── enums.py                      # CompanyActionType Enum 정의
+│   │   ├── models/
+│   │   │   ├── base_company_action.py    # 공통 모델
+│   │   │   ├── report_status.py          # 제출 후 상태 확인
+│   │   │   └── reply_to_review.py        # 회계사 의견에 대한 응답
+│   │   ├── services/
+│   │   │   ├── status_view.py            # 상태 확인
+│   │   │   ├── response.py               # 의견 응답 제출
+│   │   │   └── auth.py
+│   │   ├── repository/
+│   │   │   ├── status_repository.py
+│   │   │   ├── response_repository.py
+│   │   │   └── auth_repository.py
+│   └── approval/
+│       ├── controller.py                 # API 진입 → factory로 위임
+│       ├── factory.py                    # enum 기반 승인 유형별 전략 분기
+│       ├── action.py                     # 핵심 처리 흐름 (승인/반려 trigger)
+│       ├── schema.py                     # Pydantic 요청/응답 스키마
+│       ├── enums.py                      # ApprovalType Enum 정의
+│       ├── models/
+│       │   ├── base_approval.py          # ABC: 승인 공통 속성 (id, 상태, 요청자 등)
+│       │   ├── report_approval.py
+│       │   ├── registration_approval.py
+│       │   ├── company_code_approval.py
+│       │   └── deletion_approval.py
+│       ├── services/
+│       │   ├── approval.py               # approve(), reject(), list_pending()
+│       │   ├── report.py
+│       │   ├── registration.py
+│       │   ├── company_code.py
+│       │   ├── deletion.py
+│       │   └── auth.py
+│       ├── repository/
+│       │   ├── report_repository.py
+│       │   ├── registration_repository.py
+│       │   ├── company_code_repository.py
+│       │   ├── deletion_repository.py
+│       │   └── auth_repository.py
+│   ├── consolidated/                     # 연결 재무제표 도메인
+│   │   ├── balance_sheet/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│   │   │   │   └── balance_repository.py
+│   │   ├── income_statement/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│   │   │   │   └── income_repository.py
+│   │   ├── capital_change/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│   │   │   │   └── capital_repository.py
+│   │   ├── cash_flow/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│               └── cashflow_repository.py
+│   ├── separated/                         # 개별 재무제표 도메인
+│   │   ├── balance_sheet/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│   │   │   │   └── balance_repository.py
+│   │   ├── income_statement/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│   │   │   │   └── income_repository.py
+│   │   ├── capital_change/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│   │   │   │   └── capital_repository.py
+│   │   ├── cash_flow/
+│   │   │   ├── controller.py
+│   │   │   ├── factory.py
+│   │   │   ├── action.py
+│   │   │   ├── schema.py
+│   │   │   ├── enums.py
+│   │   │   ├── models/
+│   │   │   │   ├── base_model.py
+│   │   │   │   └── item_model.py
+│   │   │   ├── services/
+│   │   │   │   ├── add.py
+│   │   │   │   ├── update.py
+│   │   │   │   ├── delete.py
+│   │   │   │   └── retrieve.py
+│   │   │   ├── repository/
+│               └── cashflow_repository.py
+├── infra/                                # 🔧 인프라 계층
+│   ├── db/
+│   │   ├── sqlalchemy/
+│   │   │   ├── session.py
+│   │   │   └── base.py
+│   ├── events/
+│   │   ├── dispatcher.py
+│   │   └── handlers.py
+│   └── external/
+│       └── audit_logger.py
+│
+├── shared/
+│   ├── config.py
+│   ├── enums.py
+│   ├── exceptions.py
+│   └── utils.py
+│
+└── main.py
