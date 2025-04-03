@@ -12,6 +12,7 @@ services:
       - pgdata:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    restart: always
 
   web:
     build: .
@@ -42,6 +43,7 @@ services:
       - "5050:80"
     depends_on:
       - db
-
+    restart: always
+    
 volumes:
   pgdata:
