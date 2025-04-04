@@ -1,0 +1,111 @@
+-- 기업 정보
+CREATE TABLE company (
+    company_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    industry VARCHAR(50),
+    business_number VARCHAR(20),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 사용자 정보
+CREATE TABLE users (
+    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES company(company_id),
+    email VARCHAR(50) UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    role VARCHAR(20) NOT NULL CHECK (role IN ('accountant', 'stakeholder', 'approver', 'team_lead', 'partner')),
+    approved_by UUID REFERENCES users(user_id),
+    approved_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 보고서 메타 정보
+CREATE TABLE reports (
+    report_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    company_id UUID REFERENCES company(company_id),
+    report_type VARCHAR(50) NOT NULL CHECK (report_type IN (
+        'consolidated_bs', 'consolidated_is', 'consolidated_cf', 'consolidated_ce',
+        'separate_bs', 'separate_is', 'separate_cf', 'separate_ce'
+    )),
+    year INT NOT NULL,
+    created_by UUID REFERENCES users(user_id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'approved', 'rejected'))
+);
+
+-- 보고서 참여 사용자 연결 (N:N)
+CREATE TABLE report_user_link (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    report_id UUID REFERENCES reports(report_id),
+    user_id UUID REFERENCES users(user_id),
+    role VARCHAR(20) NOT NULL CHECK (role IN ('editor', 'reviewer', 'viewer', 'co-author')),
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 공통 보고서 항목
+CREATE TABLE report_entries (
+    item_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    report_id UUID REFERENCES reports(report_id),
+    account_name TEXT NOT NULL,
+    current_term NUMERIC,
+    previous_term NUMERIC,
+    indent INT DEFAULT 0
+);
+
+-- 자본변동표 전용 항목
+CREATE TABLE capital_change_items (
+    item_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    report_id UUID REFERENCES reports(report_id),
+    capital_type TEXT,
+    beginning_balance NUMERIC,
+    increase NUMERIC,
+    decrease NUMERIC,
+    ending_balance NUMERIC
+);
+
+-- 회계사 → 관계자 요청
+CREATE TABLE report_requests (
+    request_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    report_id UUID REFERENCES reports(report_id),
+    from_user_id UUID REFERENCES users(user_id),
+    to_user_id UUID REFERENCES users(user_id),
+    content TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 관계자 → 회계사 응답
+CREATE TABLE request_responses (
+    response_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    request_id UUID REFERENCES report_requests(request_id),
+    responder_id UUID REFERENCES users(user_id),
+    content TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 승인 프로세스 정의
+CREATE TABLE approval_processes (
+    process_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    report_type VARCHAR(50) NOT NULL
+);
+
+-- 승인 단계 정의
+CREATE TABLE approval_steps (
+    step_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    process_id UUID REFERENCES approval_processes(process_id),
+    step_order INT NOT NULL,
+    role_required VARCHAR(20) NOT NULL,
+    description TEXT
+);
+
+-- 실제 승인 이력
+CREATE TABLE report_approvals (
+    approval_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    report_id UUID REFERENCES reports(report_id),
+    step_id UUID REFERENCES approval_steps(step_id),
+    approver_id UUID REFERENCES users(user_id),
+    status VARCHAR(20) CHECK (status IN ('pending', 'approved', 'rejected')),
+    comment TEXT,
+    approved_at TIMESTAMP
+);
