@@ -1,8 +1,8 @@
-name: fastapi-app
-
 services:
   db:
-    image: postgres
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
     container_name: hc_postgres
     environment:
       POSTGRES_USER: myuser
@@ -15,7 +15,9 @@ services:
     restart: always
 
   web:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: hc_fastapi
     ports:
       - "8000:8000"
@@ -44,6 +46,6 @@ services:
     depends_on:
       - db
     restart: always
-    
+
 volumes:
   pgdata:
