@@ -1,3 +1,5 @@
+수정중 
+
 -- 기업 정보
 CREATE TABLE company (
     company_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
